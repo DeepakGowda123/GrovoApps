@@ -1,0 +1,58 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+
+    // Add the Google services plugin
+    id "com.google.gms.google-services"  // This line is important to apply the Google services plugin
+}
+
+android {
+    namespace = "com.example.grovo_app"  // Your application ID (should match your google-services.json)
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = "25.1.8937393"
+
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += ["-Xjvm-default=all"]
+    }
+
+    defaultConfig {
+        applicationId = "com.example.grovo_app"  // Your unique Application ID (must match the package name in your google-services.json)
+        minSdk = 23
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug
+        }
+    }
+}
+
+dependencies {
+    // Firebase BoM to manage Firebase SDK versions automatically
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')  // Firebase BOM
+
+    // Add Firebase SDKs (e.g., Firebase Analytics)
+    implementation 'com.google.firebase:firebase-analytics'  // Example Firebase SDK
+    implementation 'com.google.firebase:firebase-auth'       // Example Firebase SDK for Authentication
+
+    // Add more Firebase dependencies as needed (e.g., Firestore, Firebase Messaging, etc.)
+}
+
+flutter {
+    source = "../.."
+}
+
+// Apply the Google services plugin (Make sure this is at the bottom)
+apply plugin: 'com.google.gms.google-services'

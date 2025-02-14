@@ -1,0 +1,57 @@
+buildscript {
+    repositories {
+        google()  // Make sure to include Google repositories
+        mavenCentral()
+    }
+    dependencies {
+        // Add the classpath for Google services
+        classpath 'com.google.gms:google-services:4.4.2'  // Add this line
+        classpath 'com.android.tools.build:gradle:8.1.4'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.21"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    // Add this new configuration block
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
+
+    // Add Java compatibility settings for all subprojects
+    subprojects {
+        tasks.withType(JavaCompile) {
+            options.fork = true
+            options.forkOptions.executable = 'C:\\Program Files\\Java\\jdk-17\\bin\\javac.exe' // Path to your Java 17 javac
+        }
+        // Specify Java 17 compatibility for compile options
+        project.afterEvaluate {
+            if (project.hasProperty('android')) {
+                android {
+                    compileOptions {
+                        sourceCompatibility = JavaVersion.VERSION_17
+                        targetCompatibility = JavaVersion.VERSION_17
+                    }
+                }
+            }
+        }
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
