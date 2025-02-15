@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_carousel_slider/carousel_slider.dart';
 
 class FarmerDashboardScreen extends StatefulWidget {
   final User user;
@@ -15,15 +16,25 @@ class FarmerDashboardScreen extends StatefulWidget {
 class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   late Razorpay _razorpay;
-  List<Map<String, dynamic>> products = []; // Updated type definition
+  List<Map<String, dynamic>> products = [];
 
-  // Updated Categories based on business requirements
+  // Updated Categories
+  // Updated Categories
   List<Map<String, String>> categories = [
     {'name': 'Fertilizers', 'image': 'assets/icons/fertilizer.png'},
-    {'name': 'Pesticides', 'image': 'assets/icons/pesticide.png'},
-    {'name': 'Machineries', 'image': 'assets/icons/machinery.png'},
+    {'name': 'Herbicides', 'image': 'assets/icons/herbicide.png'},
+    {'name': 'Fungicides', 'image': 'assets/icons/fungicide.png'},
+    {'name': 'Nutrients', 'image': 'assets/icons/nutrient.png'},
+    {'name': 'Insecticides', 'image': 'assets/icons/insecticide.png'},
+    {'name': 'Seeds', 'image': 'assets/icons/seeds.png'},
+    {'name': 'Machinery', 'image': 'assets/icons/machinery.png'},
+  ];
+
+  List<String> promoImages = [
+    'assets/banners/banner1.jpg',
+    'assets/banners/banner2.jpeg',
+    'assets/banners/banner3.jpeg',
   ];
 
   String? farmerName;
@@ -62,28 +73,22 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
 
   Future<void> _loadProducts() async {
     try {
-      QuerySnapshot querySnapshot = await _firestore.collection('products').get();
+      QuerySnapshot querySnapshot =
+      await _firestore.collection('products').get();
       setState(() {
         products = querySnapshot.docs.map((doc) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           return {
-            'name': data['name']?.toString() ?? 'Unknown Product',
-            'price': data['price']?.toString() ?? '0',
-            'discount': data['discount']?.toString() ?? '0',
-            'image': data['image']?.toString() ?? 'https://via.placeholder.com/150',
+            'name': data['name'] ?? 'Unknown Product',
+            'price': data['price'] ?? '0',
+            'discount': data['discount'] ?? '0',
+            'image': data['image'] ?? 'https://via.placeholder.com/150',
           };
         }).toList();
       });
     } catch (e) {
       print('Error loading products: $e');
-      // Handle error appropriately
     }
-  }
-
-  void _searchProducts(String query) {
-    setState(() {
-      searchQuery = query;
-    });
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
@@ -99,12 +104,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   void _handleExternalWallet(ExternalWalletResponse response) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text("External Wallet Used")));
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _razorpay.clear();
   }
 
   @override
@@ -128,10 +127,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.green,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
               ),
               child: Column(
                 children: [
@@ -146,14 +142,10 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Hello, ${farmerName ?? 'User'}',
-                            style: TextStyle(fontSize: 20, color: Colors.white),
-                          ),
-                          Text(
-                            '31°C | Few Clouds ☁',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                          Text('Hello, ${farmerName ?? 'User'}',
+                              style: TextStyle(fontSize: 20, color: Colors.white)),
+                          Text('31°C | Few Clouds ☁',
+                              style: TextStyle(color: Colors.white)),
                         ],
                       ),
                       Spacer(),
@@ -163,7 +155,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                     ],
                   ),
                   SizedBox(height: 10),
-                  // Search Bar
                   TextField(
                     decoration: InputDecoration(
                       filled: true,
@@ -176,119 +167,88 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    onChanged: _searchProducts,
                   ),
                 ],
               ),
             ),
 
-            // Category Section
+            // Horizontal Categories
             SizedBox(
-              height: 100,
-              child: ListView.builder(
+              height: 110,
+              child: ListView(
                 scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final category = categories[index];
+                children: categories.map((category) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 8.0),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Colors.white,
+                        Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(color: Colors.black12, blurRadius: 5)
+                            ],
+                          ),
                           child: Image.asset(
-                            category['image'] ?? 'assets/icons/default.png',
+                            category['image']!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(Icons.error, color: Colors.red);
                             },
                           ),
                         ),
                         SizedBox(height: 5),
-                        Text(
-                          category['name'] ?? 'Unknown',
-                          textAlign: TextAlign.center,
-                        ),
+                        Text(category['name']!,
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   );
-                },
+                }).toList(),
               ),
             ),
 
-            // Product Grid
-            Padding(
-              padding: EdgeInsets.all(10),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.7,
+            // Auto Sliding Promotional Banner
+            Container(
+              height: 180,
+              child: CarouselSlider(
+                slideTransform: CubeTransform(),
+                slideIndicator: CircularSlideIndicator(
+                  padding: EdgeInsets.only(bottom: 10),
                 ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  var product = products[index];
-                  return Card(
-                    shape: RoundedRectangleBorder(
+                enableAutoSlider: true, // ✅ Enable auto-sliding
+                autoSliderDelay: Duration(seconds: 5), // ✅ Change slide every 2 seconds
+                autoSliderTransitionTime: Duration(milliseconds: 2500), // ✅ Smooth transition
+                unlimitedMode: true, // ✅ Enables infinite looping
+                children: promoImages.map((image) {
+                  return Container(
+                    margin: EdgeInsets.symmetric(horizontal: 5),
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Image.network(
-                            product['image'] ?? 'https://via.placeholder.com/150',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(child: Icon(Icons.error));
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product['name'] ?? 'Unknown Product',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                '₹${product['price'] ?? '0'}',
-                                style: TextStyle(color: Colors.green),
-                              ),
-                              Text(
-                                'Saved ₹${product['discount'] ?? '0'}',
-                                style: TextStyle(color: Colors.orange, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      child: Image.asset(
+                        image,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Icon(Icons.image_not_supported, size: 50),
+                          );
+                        },
+                      ),
                     ),
                   );
-                },
+                }).toList(),
               ),
             ),
+            // More sections (Grid Categories, Brands, Products) can be added here...
           ],
         ),
-      ),
-
-      // Bottom Navigation Bar
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.local_hospital), label: 'Crop Doctor'),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'My Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Agri Store'),
-        ],
       ),
     );
   }

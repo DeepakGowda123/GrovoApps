@@ -126,6 +126,7 @@ dependencies:
   #cloud_firestore: ^5.3.0
   firebase_storage: ^12.3.7
   firebase_messaging: ^15.1.6
+  flutter_carousel_slider: ^1.1.0
 
 flutter:
   uses-material-design: true
@@ -137,6 +138,8 @@ flutter:
     - assets/icons/fertilizer.png
     - assets/icons/pesticide.png
     - assets/icons/machinery.png
+    - assets/icons/
+    - assets/banners/
 
 dev_dependencies:
   flutter_test:
