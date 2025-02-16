@@ -140,6 +140,7 @@ flutter:
     - assets/icons/machinery.png
     - assets/icons/
     - assets/banners/
+    - assets/brands/
 
 dev_dependencies:
   flutter_test:

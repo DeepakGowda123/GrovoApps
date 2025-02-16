@@ -9,9 +9,13 @@ class FarmerDashboardScreen extends StatefulWidget {
 
   FarmerDashboardScreen({required this.user});
 
+
+
   @override
   _FarmerDashboardScreenState createState() => _FarmerDashboardScreenState();
 }
+
+
 
 class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -19,7 +23,9 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   late Razorpay _razorpay;
   List<Map<String, dynamic>> products = [];
 
-  // Updated Categories
+  Map<String, List<Map<String, dynamic>>> _categorizedProducts = {};
+
+
   // Updated Categories
   List<Map<String, String>> categories = [
     {'name': 'Fertilizers', 'image': 'assets/icons/fertilizer.png'},
@@ -36,6 +42,17 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     'assets/banners/banner2.jpeg',
     'assets/banners/banner3.jpeg',
   ];
+
+  //brands logo
+  List<Map<String, String>> brands = [
+    {'name': 'BAYER', 'image': 'assets/brands/brand1.png'},
+    {'name': 'SYNGENTA', 'image': 'assets/brands/brand2.png'},
+    {'name': 'BASF', 'image': 'assets/brands/brand7.png'},
+    {'name': 'FMC', 'image': 'assets/brands/brand4.png'},
+    {'name': 'ADAMA', 'image': 'assets/brands/brand5.png'},
+    {'name': 'IFFCO', 'image': 'assets/brands/brand8.png'},
+  ];
+
 
   String? farmerName;
   String? farmerMobile;
@@ -75,21 +92,40 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     try {
       QuerySnapshot querySnapshot =
       await _firestore.collection('products').get();
+
+      // Create a Map to store products by category
+      Map<String, List<Map<String, dynamic>>> categorizedProducts = {};
+
+      for (var doc in querySnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+        String category = data['category'] ?? 'Unknown';
+        String imageUrl = data['image'] ?? 'https://via.placeholder.com/150';
+
+        if (!categorizedProducts.containsKey(category)) {
+          categorizedProducts[category] = [];
+        }
+
+        categorizedProducts[category]!.add({
+          'name': data['name'] ?? 'Unknown Product',
+          'price': data['price'] ?? 0,
+          'discountPrice': data['discount price'] ?? data['price'], // Handle Discount
+          'image': imageUrl,
+          'brand': data['brand'] ?? 'Unknown Brand',
+          'shopName': data['shopName'] ?? 'Unknown Shop',
+          'availability': data['availability'] ?? 0,
+        });
+      }
+
       setState(() {
-        products = querySnapshot.docs.map((doc) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          return {
-            'name': data['name'] ?? 'Unknown Product',
-            'price': data['price'] ?? '0',
-            'discount': data['discount'] ?? '0',
-            'image': data['image'] ?? 'https://via.placeholder.com/150',
-          };
-        }).toList();
+        _categorizedProducts = categorizedProducts;
       });
+
     } catch (e) {
-      print('Error loading products: $e');
+      print('🔥 Error loading products: $e');
     }
   }
+
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     ScaffoldMessenger.of(context)
@@ -246,6 +282,330 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                 }).toList(),
               ),
             ),
+
+
+            // Grid-Based Categories (Second Display)
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Categories",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside GridView
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 3 columns
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.9, // Adjust size
+                    ),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      var category = categories[index];
+                      return GestureDetector(
+                        onTap: () {
+                          // Navigate to category-specific product list (To be implemented)
+                          print("Selected Category: ${category['name']}");
+                        },
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: Image.asset(
+                                category['image']!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              category['name']!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Brands Section
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Brands",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(), // Prevents grid from scrolling
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 3 brands per row
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: brands.length,
+                    itemBuilder: (context, index) {
+                      var brand = brands[index];
+                      return GestureDetector(
+                        onTap: () {
+                          print("Selected Brand: ${brand['name']}");
+                        },
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: Image.asset(
+                                brand['image']!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              brand['name']!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // ALL PRODUCTS SECTION
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "ALL PRODUCTS",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+
+                  // Loop through each category and display its products
+                  Column(
+                    children: _categorizedProducts.entries.map((entry) {
+                      String categoryName = entry.key;
+                      List<Map<String, dynamic>> productsList = entry.value;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            categoryName,
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 8),
+
+                          Container(
+                            height: MediaQuery.of(context).size.height * 0.32, // More height for details
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: productsList.length,
+                              itemBuilder: (context, index) {
+                                var product = productsList[index];
+
+                                // Calculate discount percentage
+                                double discountPercent = ((product['price'] - product['discountPrice']) / product['price']) * 100;
+                                String discountText = "${discountPercent.toStringAsFixed(0)}% OFF"; // Round off
+
+                                return Card(
+                                  margin: EdgeInsets.only(right: 10, bottom: 10), // Added bottom spacing
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    side: BorderSide(color: Colors.black26, width: 0.8), // Light black border
+                                  ),
+                                  color: Theme.of(context).scaffoldBackgroundColor, // Matches screen color
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width * 0.42,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100], // Card background
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.black26, width: 0.8), // Light black border
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.black12, blurRadius: 5),
+                                      ],
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // Product Image with Discount Badge
+                                            Stack(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                                                  child: Image.network(
+                                                    product['image'],
+                                                    height: MediaQuery.of(context).size.height * 0.15,
+                                                    width: double.infinity,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Container(
+                                                        height: MediaQuery.of(context).size.height * 0.15,
+                                                        color: Colors.grey[300],
+                                                        child: Icon(Icons.image_not_supported, size: 50),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                                // Discount Badge
+                                                Positioned(
+                                                  top: 8,
+                                                  left: 8,
+                                                  child: Container(
+                                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.orange,
+                                                      borderRadius: BorderRadius.circular(5),
+                                                    ),
+                                                    child: Text(
+                                                      discountText,
+                                                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+
+                                            // Product Details
+                                            Padding(
+                                              padding: EdgeInsets.all(8),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    product['name'],
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  SizedBox(height: 3),
+                                                  Text(
+                                                    product['brand'],
+                                                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  SizedBox(height: 5),
+
+                                                  // Prices
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        "₹${product['discountPrice']}",
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 14,
+                                                          color: Colors.green,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 5),
+                                                      Text(
+                                                        "₹${product['price']}",
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                          decoration: TextDecoration.lineThrough,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+
+                                                  SizedBox(height: 5),
+
+                                                  // Availability & Shop
+                                                  Text(
+                                                    "From: ${product['shopName']}",
+                                                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+
+                                                  Text(
+                                                    "Stock: ${product['availability']}",
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: product['availability'] > 0 ? Colors.blue : Colors.red,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        // Heart Icon for Favorites
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: IconButton(
+                                            icon: Icon(Icons.favorite_border, color: Colors.grey),
+                                            onPressed: () {
+                                              print("Added to favorites: ${product['name']}");
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+
+                              },
+                            ),
+                          ),
+                          SizedBox(height: 20), // Space between categories
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+
             // More sections (Grid Categories, Brands, Products) can be added here...
           ],
         ),
