@@ -145,471 +145,471 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text('Farmer Dashboard'),
-        elevation: 0,
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(icon: Icon(Icons.notifications), onPressed: () {}),
-          IconButton(icon: Icon(Icons.shopping_cart), onPressed: () {}),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile & Weather Info
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-              ),
-              child: Column(
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          title: Text('Farmer Dashboard'),
+          elevation: 0,
+          backgroundColor: Colors.green,
+          actions: [
+            IconButton(icon: Icon(Icons.notifications), onPressed: () {}),
+            IconButton(icon: Icon(Icons.shopping_cart), onPressed: () {}),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+              children: [
+          // Profile & Weather Info
+          Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.green,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  Row(
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40, color: Colors.green),
+                  ),
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, size: 40, color: Colors.green),
-                      ),
-                      SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Hello, ${farmerName ?? 'User'}',
-                              style: TextStyle(fontSize: 20, color: Colors.white)),
-                          Text('31°C | Few Clouds ☁',
-                              style: TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                      Spacer(),
-                      Icon(Icons.account_balance_wallet, color: Colors.white),
-                      SizedBox(width: 5),
-                      Text('0 Coins', style: TextStyle(color: Colors.white)),
+                      Text('Hello, ${farmerName ?? 'User'}',
+                          style: TextStyle(fontSize: 20, color: Colors.white)),
+                      Text('31°C | Few Clouds ☁',
+                          style: TextStyle(color: Colors.white)),
                     ],
                   ),
-                  SizedBox(height: 10),
-                  TextField(
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: 'Search products here',
-                      prefixIcon: Icon(Icons.search),
-                      suffixIcon: Icon(Icons.mic, color: Colors.orange),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
+                  Spacer(),
+                  Icon(Icons.account_balance_wallet, color: Colors.white),
+                  SizedBox(width: 5),
+                  Text('0 Coins', style: TextStyle(color: Colors.white)),
                 ],
               ),
-            ),
-
-            // Horizontal Categories
-            SizedBox(
-              height: 110,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: categories.map((category) {
-                  return Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 5)
-                            ],
-                          ),
-                          child: Image.asset(
-                            category['image']!,
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(Icons.error, color: Colors.red);
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 5),
-                        Text(category['name']!,
-                            style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            // Auto Sliding Promotional Banner
-            Container(
-              height: 180,
-              child: CarouselSlider(
-                slideTransform: CubeTransform(),
-                slideIndicator: CircularSlideIndicator(
-                  padding: EdgeInsets.only(bottom: 10),
+              SizedBox(height: 10),
+              TextField(
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: 'Search products here',
+                  prefixIcon: Icon(Icons.search),
+                  suffixIcon: Icon(Icons.mic, color: Colors.orange),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-                enableAutoSlider: true, // ✅ Enable auto-sliding
-                autoSliderDelay: Duration(seconds: 5), // ✅ Change slide every 2 seconds
-                autoSliderTransitionTime: Duration(milliseconds: 2500), // ✅ Smooth transition
-                unlimitedMode: true, // ✅ Enables infinite looping
-                children: promoImages.map((image) {
-                  return Container(
-                    margin: EdgeInsets.symmetric(horizontal: 5),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+              ),
+            ],
+          ),
+        ),
+
+        // Horizontal Categories
+        SizedBox(
+          height: 110,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: categories.map((category) {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black12, blurRadius: 5)
+                        ],
+                      ),
                       child: Image.asset(
-                        image,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
+                        category['image']!,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Icon(Icons.image_not_supported, size: 50),
+                          return Icon(Icons.error, color: Colors.red);
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(category['name']!,
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        // Auto Sliding Promotional Banner
+        Container(
+          height: 180,
+          child: CarouselSlider(
+            slideTransform: CubeTransform(),
+            slideIndicator: CircularSlideIndicator(
+              padding: EdgeInsets.only(bottom: 10),
+            ),
+            enableAutoSlider: true, // ✅ Enable auto-sliding
+            autoSliderDelay: Duration(seconds: 5), // ✅ Change slide every 2 seconds
+            autoSliderTransitionTime: Duration(milliseconds: 2500), // ✅ Smooth transition
+            unlimitedMode: true, // ✅ Enables infinite looping
+            children: promoImages.map((image) {
+              return Container(
+                margin: EdgeInsets.symmetric(horizontal: 5),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    image,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Icon(Icons.image_not_supported, size: 50),
+                      );
+                    },
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+
+        // Grid-Based Categories (Second Display)
+        Padding(
+        padding: EdgeInsets.all(16),
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Text(
+    "Categories",
+    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    ),
+    SizedBox(height: 10),
+    GridView.builder(
+    shrinkWrap: true,
+    physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside GridView
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 3, // 3 columns
+    crossAxisSpacing: 10,
+    mainAxisSpacing: 10,
+    childAspectRatio: 0.9, // Adjust size
+    ),
+    itemCount: categories.length,
+    itemBuilder: (context, index) {
+    var category = categories[index];
+    return GestureDetector(
+      onTap: () {
+        // Navigate to category-specific product list (To be implemented)
+        print("Selected Category: ${category['name']}");
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            child: Image.asset(
+              category['image']!,
+              width: 50,
+              height: 50,
+              fit: BoxFit.contain,
+            ),
+          ),
+          SizedBox(height: 5),
+          Text(
+            category['name']!,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+    },
+    ),
+    ],
+    ),
+        ),
+
+                // Brands Section
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Brands",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(), // Prevents grid from scrolling
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3, // 3 brands per row
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 1.0,
+                        ),
+                        itemCount: brands.length,
+                        itemBuilder: (context, index) {
+                          var brand = brands[index];
+                          return GestureDetector(
+                            onTap: () {
+                              print("Selected Brand: ${brand['name']}");
+                            },
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 5,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Image.asset(
+                                    brand['image']!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  brand['name']!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-
-            // Grid-Based Categories (Second Display)
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Categories",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ],
                   ),
-                  SizedBox(height: 10),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside GridView
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 3 columns
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 0.9, // Adjust size
-                    ),
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      var category = categories[index];
-                      return GestureDetector(
-                        onTap: () {
-                          // Navigate to category-specific product list (To be implemented)
-                          print("Selected Category: ${category['name']}");
-                        },
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 5,
-                                  ),
-                                ],
+                ),
+
+                // ALL PRODUCTS SECTION
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "ALL PRODUCTS",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+
+                      // Loop through each category and display its products
+                      Column(
+                        children: _categorizedProducts.entries.map((entry) {
+                          String categoryName = entry.key;
+                          List<Map<String, dynamic>> productsList = entry.value;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                categoryName,
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
-                              child: Image.asset(
-                                category['image']!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              category['name']!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+                              SizedBox(height: 8),
 
-            // Brands Section
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Brands",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(), // Prevents grid from scrolling
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 3 brands per row
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.0,
-                    ),
-                    itemCount: brands.length,
-                    itemBuilder: (context, index) {
-                      var brand = brands[index];
-                      return GestureDetector(
-                        onTap: () {
-                          print("Selected Brand: ${brand['name']}");
-                        },
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 5,
-                                  ),
-                                ],
-                              ),
-                              child: Image.asset(
-                                brand['image']!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              brand['name']!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+                              Container(
+                                height: MediaQuery.of(context).size.height * 0.32, // More height for details
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: productsList.length,
+                                  itemBuilder: (context, index) {
+                                    var product = productsList[index];
 
-            // ALL PRODUCTS SECTION
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "ALL PRODUCTS",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
+                                    // Calculate discount percentage
+                                    double discountPercent = ((product['price'] - product['discountPrice']) / product['price']) * 100;
+                                    String discountText = "${discountPercent.toStringAsFixed(0)}% OFF"; // Round off
 
-                  // Loop through each category and display its products
-                  Column(
-                    children: _categorizedProducts.entries.map((entry) {
-                      String categoryName = entry.key;
-                      List<Map<String, dynamic>> productsList = entry.value;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            categoryName,
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 8),
-
-                          Container(
-                            height: MediaQuery.of(context).size.height * 0.32, // More height for details
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: productsList.length,
-                              itemBuilder: (context, index) {
-                                var product = productsList[index];
-
-                                // Calculate discount percentage
-                                double discountPercent = ((product['price'] - product['discountPrice']) / product['price']) * 100;
-                                String discountText = "${discountPercent.toStringAsFixed(0)}% OFF"; // Round off
-
-                                return Card(
-                                  margin: EdgeInsets.only(right: 10, bottom: 10), // Added bottom spacing
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    side: BorderSide(color: Colors.black26, width: 0.8), // Light black border
-                                  ),
-                                  color: Theme.of(context).scaffoldBackgroundColor, // Matches screen color
-                                  child: Container(
-                                    width: MediaQuery.of(context).size.width * 0.42,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100], // Card background
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.black26, width: 0.8), // Light black border
-                                      boxShadow: [
-                                        BoxShadow(color: Colors.black12, blurRadius: 5),
-                                      ],
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                    return Card(
+                                      margin: EdgeInsets.only(right: 10, bottom: 10), // Added bottom spacing
+                                      elevation: 2,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        side: BorderSide(color: Colors.black26, width: 0.8), // Light black border
+                                      ),
+                                      color: Theme.of(context).scaffoldBackgroundColor, // Matches screen color
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width * 0.42,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100], // Card background
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: Colors.black26, width: 0.8), // Light black border
+                                          boxShadow: [
+                                            BoxShadow(color: Colors.black12, blurRadius: 5),
+                                          ],
+                                        ),
+                                        child: Stack(
                                           children: [
-                                            // Product Image with Discount Badge
-                                            Stack(
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                ClipRRect(
-                                                  borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                                                  child: Image.network(
-                                                    product['image'],
-                                                    height: MediaQuery.of(context).size.height * 0.15,
-                                                    width: double.infinity,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      return Container(
+                                                // Product Image with Discount Badge
+                                                Stack(
+                                                  children: [
+                                                    ClipRRect(
+                                                      borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                                                      child: Image.network(
+                                                        product['image'],
                                                         height: MediaQuery.of(context).size.height * 0.15,
-                                                        color: Colors.grey[300],
-                                                        child: Icon(Icons.image_not_supported, size: 50),
-                                                      );
-                                                    },
-                                                  ),
+                                                        width: double.infinity,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          return Container(
+                                                            height: MediaQuery.of(context).size.height * 0.15,
+                                                            color: Colors.grey[300],
+                                                            child: Icon(Icons.image_not_supported, size: 50),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                    // Discount Badge
+                                                    Positioned(
+                                                      top: 8,
+                                                      left: 8,
+                                                      child: Container(
+                                                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.orange,
+                                                          borderRadius: BorderRadius.circular(5),
+                                                        ),
+                                                        child: Text(
+                                                          discountText,
+                                                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                // Discount Badge
-                                                Positioned(
-                                                  top: 8,
-                                                  left: 8,
-                                                  child: Container(
-                                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.orange,
-                                                      borderRadius: BorderRadius.circular(5),
-                                                    ),
-                                                    child: Text(
-                                                      discountText,
-                                                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                                    ),
+
+                                                // Product Details
+                                                Padding(
+                                                  padding: EdgeInsets.all(8),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        product['name'],
+                                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      SizedBox(height: 3),
+                                                      Text(
+                                                        product['brand'],
+                                                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      SizedBox(height: 5),
+
+                                                      // Prices
+                                                      Row(
+                                                        children: [
+                                                          Text(
+                                                            "₹${product['discountPrice']}",
+                                                            style: TextStyle(
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 14,
+                                                              color: Colors.green,
+                                                            ),
+                                                          ),
+                                                          SizedBox(width: 5),
+                                                          Text(
+                                                            "₹${product['price']}",
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: Colors.grey,
+                                                              decoration: TextDecoration.lineThrough,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      SizedBox(height: 5),
+
+                                                      // Availability & Shop
+                                                      Text(
+                                                        "From: ${product['shopName']}",
+                                                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+
+                                                      Text(
+                                                        "Stock: ${product['availability']}",
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: product['availability'] > 0 ? Colors.blue : Colors.red,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ],
                                             ),
 
-                                            // Product Details
-                                            Padding(
-                                              padding: EdgeInsets.all(8),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    product['name'],
-                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                  SizedBox(height: 3),
-                                                  Text(
-                                                    product['brand'],
-                                                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                  SizedBox(height: 5),
-
-                                                  // Prices
-                                                  Row(
-                                                    children: [
-                                                      Text(
-                                                        "₹${product['discountPrice']}",
-                                                        style: TextStyle(
-                                                          fontWeight: FontWeight.bold,
-                                                          fontSize: 14,
-                                                          color: Colors.green,
-                                                        ),
-                                                      ),
-                                                      SizedBox(width: 5),
-                                                      Text(
-                                                        "₹${product['price']}",
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          color: Colors.grey,
-                                                          decoration: TextDecoration.lineThrough,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-
-                                                  SizedBox(height: 5),
-
-                                                  // Availability & Shop
-                                                  Text(
-                                                    "From: ${product['shopName']}",
-                                                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-
-                                                  Text(
-                                                    "Stock: ${product['availability']}",
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: product['availability'] > 0 ? Colors.blue : Colors.red,
-                                                    ),
-                                                  ),
-                                                ],
+                                            // Heart Icon for Favorites
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: IconButton(
+                                                icon: Icon(Icons.favorite_border, color: Colors.grey),
+                                                onPressed: () {
+                                                  print("Added to favorites: ${product['name']}");
+                                                },
                                               ),
                                             ),
                                           ],
                                         ),
+                                      ),
+                                    );
 
-                                        // Heart Icon for Favorites
-                                        Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: IconButton(
-                                            icon: Icon(Icons.favorite_border, color: Colors.grey),
-                                            onPressed: () {
-                                              print("Added to favorites: ${product['name']}");
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-
-                              },
-                            ),
-                          ),
-                          SizedBox(height: 20), // Space between categories
-                        ],
-                      );
-                    }).toList(),
+                                  },
+                                ),
+                              ),
+                              SizedBox(height: 20), // Space between categories
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            // More sections (Grid Categories, Brands, Products) can be added here...
-          ],
+                // More sections (Grid Categories, Brands, Products) can be added here...
+              ],
+          ),
         ),
-      ),
     );
   }
 }
