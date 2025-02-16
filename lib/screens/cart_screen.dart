@@ -1,0 +1,340 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class CartScreen extends StatefulWidget {
+  @override
+  _CartScreenState createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  final String farmerId = FirebaseAuth.instance.currentUser!.uid;
+  List<Map<String, dynamic>> cartItems = [];
+  bool isLoading = true;
+  String? error;
+  double totalAmount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCartItems();
+  }
+
+  Future<void> fetchCartItems() async {
+    try {
+      setState(() {
+        isLoading = true;
+        error = null;
+      });
+
+      // Get farmer's cart
+      DocumentSnapshot farmerDoc = await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(farmerId)
+          .get();
+
+      if (farmerDoc.exists && (farmerDoc.data() as Map<String, dynamic>).containsKey('cart')) {
+        List<dynamic> cart = List.from((farmerDoc.data() as Map<String, dynamic>)['cart']);
+
+        // Fetch product details for each cart item
+        List<Map<String, dynamic>> items = [];
+        double total = 0;
+
+        for (var cartItem in cart) {
+          DocumentSnapshot productDoc = await FirebaseFirestore.instance
+              .collection('products')
+              .doc(cartItem['productId'])
+              .get();
+
+          if (productDoc.exists) {
+            var productData = productDoc.data() as Map<String, dynamic>;
+            var item = {
+              'id': productDoc.id,
+              'quantity': cartItem['quantity'],
+              ...productData,
+            };
+            items.add(item);
+
+            // Calculate total (using discount price if available)
+            double itemPrice = (productData['discount price'] ?? productData['price']).toDouble();
+            total += itemPrice * cartItem['quantity'];
+          }
+        }
+
+        setState(() {
+          cartItems = items;
+          totalAmount = total;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          cartItems = [];
+          totalAmount = 0;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = 'Failed to load cart. Please try again.';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> updateQuantity(String productId, int newQuantity) async {
+    try {
+      // Get current cart
+      DocumentSnapshot farmerDoc = await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(farmerId)
+          .get();
+
+      List<dynamic> currentCart = List.from((farmerDoc.data() as Map<String, dynamic>)['cart']);
+
+      // Update quantity for the specific product
+      int itemIndex = currentCart.indexWhere((item) => item['productId'] == productId);
+
+      if (itemIndex != -1) {
+        if (newQuantity <= 0) {
+          // Remove item if quantity is 0 or less
+          currentCart.removeAt(itemIndex);
+        } else {
+          currentCart[itemIndex]['quantity'] = newQuantity;
+        }
+
+        // Update Firestore
+        await FirebaseFirestore.instance
+            .collection('farmers')
+            .doc(farmerId)
+            .update({'cart': currentCart});
+
+        // Refresh cart items
+        fetchCartItems();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update quantity'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> removeFromCart(String productId) async {
+    try {
+      // Get current cart
+      DocumentSnapshot farmerDoc = await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(farmerId)
+          .get();
+
+      List<dynamic> currentCart = List.from((farmerDoc.data() as Map<String, dynamic>)['cart']);
+
+      // Remove the item
+      currentCart.removeWhere((item) => item['productId'] == productId);
+
+      // Update Firestore
+      await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(farmerId)
+          .update({'cart': currentCart});
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Removed from cart')),
+      );
+
+      // Refresh cart items
+      fetchCartItems();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to remove item'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Shopping Cart"),
+        backgroundColor: Colors.green,
+        actions: [
+          if (!isLoading && cartItems.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: fetchCartItems,
+            ),
+        ],
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : error != null
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(error!, style: TextStyle(color: Colors.red)),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: fetchCartItems,
+              child: Text('Retry'),
+            ),
+          ],
+        ),
+      )
+          : cartItems.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Your cart is empty",
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Add items to your cart to see them here",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      )
+          : Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: cartItems.length,
+              padding: EdgeInsets.all(8),
+              itemBuilder: (context, index) {
+                var item = cartItems[index];
+                return Card(
+                  elevation: 2,
+                  margin: EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.all(8),
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item['image'],
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 80,
+                            height: 80,
+                            color: Colors.grey[300],
+                            child: Icon(Icons.image_not_supported),
+                          );
+                        },
+                      ),
+                    ),
+                    title: Text(
+                      item['name'],
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "₹${item['discount price'] ?? item['price']}",
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.remove_circle_outline),
+                              onPressed: () => updateQuantity(
+                                  item['id'], item['quantity'] - 1),
+                            ),
+                            Text(
+                              item['quantity'].toString(),
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.add_circle_outline),
+                              onPressed: () => updateQuantity(
+                                  item['id'], item['quantity'] + 1),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => removeFromCart(item['id']),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Total amount and checkout button
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Total Amount:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      '₹${totalAmount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                  ),
+                  onPressed: () {
+                    // Implement checkout functionality
+                    print('Proceed to checkout');
+                  },
+                  child: Text('Checkout'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

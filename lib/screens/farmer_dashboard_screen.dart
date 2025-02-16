@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_carousel_slider/carousel_slider.dart';
+import 'wishlist_screen.dart';
+import 'cart_screen.dart';
 
 class FarmerDashboardScreen extends StatefulWidget {
   final User user;
@@ -24,6 +26,9 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   List<Map<String, dynamic>> products = [];
 
   Map<String, List<Map<String, dynamic>>> _categorizedProducts = {};
+
+  final String farmerId = FirebaseAuth.instance.currentUser!.uid; // Get logged-in farmer ID
+  List<String> wishlist = []; // Store wishlist locally for UI update
 
 
   // Updated Categories
@@ -69,6 +74,101 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
 
     _loadProfile();
     _loadProducts();
+    fetchWishlist(); // Load wishlist when screen opens
+  }
+
+  // add to cart
+  Future<void> addToCart(String productId, double price) async {
+    try {
+      // First check if the farmer document exists and has a cart field
+      final farmerDoc = await _firestore.collection('farmers').doc(widget.user.uid).get();
+
+      if (!farmerDoc.exists) {
+        throw Exception('Farmer document not found');
+      }
+
+      final cartItem = {
+        'productId': productId,
+        'price': price,  // Include price
+        'quantity': 1,
+        //'timestamp': FieldValue.serverTimestamp()
+      };
+
+      if (!(farmerDoc.data() as Map<String, dynamic>).containsKey('cart')) {
+        // If cart doesn't exist, create it
+        await _firestore.collection('farmers').doc(widget.user.uid).set({
+          'cart': [cartItem]
+        }, SetOptions(merge: true));
+      } else {
+        // If cart exists, add to it
+        await _firestore.collection('farmers').doc(widget.user.uid).update({
+          'cart': FieldValue.arrayUnion([cartItem])
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added to cart')),
+      );
+    } catch (e) {
+      print('Error adding to cart: $e');  // Log the error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add to cart: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Fetch wishlist from Firestore
+  Future<void> fetchWishlist() async {
+    DocumentSnapshot farmerDoc = await _firestore.collection('farmers').doc(widget.user.uid).get();
+    if (farmerDoc.exists && (farmerDoc.data() as Map<String, dynamic>).containsKey('wishlist')) {
+      setState(() {
+        wishlist = List<String>.from((farmerDoc.data() as Map<String, dynamic>)['wishlist']);
+      });
+    }
+  }
+
+  /// Toggle Wishlist (Add/Remove)
+  Future<void> toggleWishlist(String productId) async {
+    final farmerRef = _firestore.collection('farmers').doc(widget.user.uid);
+
+    try {
+      if (wishlist.contains(productId)) {
+        await farmerRef.update({
+          'wishlist': FieldValue.arrayRemove([productId])
+        });
+        setState(() {
+          wishlist.remove(productId);
+        });
+      } else {
+        await farmerRef.update({
+          'wishlist': FieldValue.arrayUnion([productId])
+        });
+        setState(() {
+          wishlist.add(productId);
+        });
+      }
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(wishlist.contains(productId)
+              ? 'Added to wishlist'
+              : 'Removed from wishlist'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating wishlist'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -107,6 +207,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
         }
 
         categorizedProducts[category]!.add({
+          'id': doc.id,  // Add this line
           'name': data['name'] ?? 'Unknown Product',
           'price': data['price'] ?? 0,
           'discountPrice': data['discount price'] ?? data['price'], // Handle Discount
@@ -142,6 +243,17 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
         .showSnackBar(SnackBar(content: Text("External Wallet Used")));
   }
 
+  Widget buildWishlistButton(String productId) {
+    bool isWishlisted = wishlist.contains(productId);
+    return IconButton(
+      icon: Icon(
+        isWishlisted ? Icons.favorite : Icons.favorite_border,
+        color: isWishlisted ? Colors.red : Colors.grey,
+      ),
+      onPressed: () => toggleWishlist(productId),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,8 +263,24 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
           elevation: 0,
           backgroundColor: Colors.green,
           actions: [
-            IconButton(icon: Icon(Icons.notifications), onPressed: () {}),
-            IconButton(icon: Icon(Icons.shopping_cart), onPressed: () {}),
+            IconButton(
+              icon: Icon(Icons.favorite),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => WishlistScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.shopping_cart),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CartScreen()),
+                );
+              },
+            ),
           ],
         ),
         body: SingleChildScrollView(
@@ -578,16 +706,26 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                                               ],
                                             ),
 
+                                            // add to cart icon
+                                            Positioned(
+                                              bottom: 8,
+                                              right: 8,
+                                              child: ElevatedButton.icon(
+                                                icon: Icon(Icons.shopping_cart, size: 16),
+                                                label: Text('Add'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green,
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                ),
+                                                onPressed: () => addToCart(product['id'], product['discountPrice']),
+                                              ),
+                                            ),
+
                                             // Heart Icon for Favorites
                                             Positioned(
                                               top: 8,
                                               right: 8,
-                                              child: IconButton(
-                                                icon: Icon(Icons.favorite_border, color: Colors.grey),
-                                                onPressed: () {
-                                                  print("Added to favorites: ${product['name']}");
-                                                },
-                                              ),
+                                              child: buildWishlistButton(product['id'] ?? product['name']), // Using name as fallback ID
                                             ),
                                           ],
                                         ),
