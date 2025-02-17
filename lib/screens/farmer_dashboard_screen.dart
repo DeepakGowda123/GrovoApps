@@ -5,6 +5,11 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_carousel_slider/carousel_slider.dart';
 import 'wishlist_screen.dart';
 import 'cart_screen.dart';
+import 'weather_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+
+
 
 class FarmerDashboardScreen extends StatefulWidget {
   final User user;
@@ -23,12 +28,17 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late Razorpay _razorpay;
+
+  // Add these new weather-related variables
+  final WeatherService _weatherService = WeatherService();
+  WeatherInfo? _weatherInfo;
+  String? _weatherError;
+
   List<Map<String, dynamic>> products = [];
-
   Map<String, List<Map<String, dynamic>>> _categorizedProducts = {};
-
   final String farmerId = FirebaseAuth.instance.currentUser!.uid; // Get logged-in farmer ID
   List<String> wishlist = []; // Store wishlist locally for UI update
+
 
 
   // Updated Categories
@@ -63,6 +73,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   String? farmerMobile;
   String? farmerEmail;
   String searchQuery = '';
+  //String weatherInfo = 'Loading...'; // Default value while loading
 
   @override
   void initState() {
@@ -75,7 +86,46 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     _loadProfile();
     _loadProducts();
     fetchWishlist(); // Load wishlist when screen opens
+    _loadWeather(); // Call the function to load weather data
+    //_getLocationAndFetchWeather();
   }
+
+  // Add this new weather loading function
+  Future<void> _loadWeather() async {
+    try {
+      setState(() => _weatherError = null);
+      final weatherInfo = await _weatherService.getWeather();
+      setState(() => _weatherInfo = weatherInfo);
+    } on WeatherException catch (e) {
+      setState(() => _weatherError = e.toString());
+    }
+  }
+
+
+  // // Get current location (latitude and longitude)
+  // Future<Position> _getCurrentLocation() async {
+  //   // Check if location services are enabled
+  //   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //   if (!serviceEnabled) {
+  //     return Future.error('Location services are disabled.');
+  //   }
+  //
+  //   // Request permission to access the location
+  //   LocationPermission permission = await Geolocator.requestPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     return Future.error('Location permissions are denied.');
+  //   }
+  //
+  //   if (permission == LocationPermission.deniedForever) {
+  //     return Future.error('Location permissions are permanently denied.');
+  //   }
+  //
+  //   // Get the current location
+  //   return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  // }
+
+
+
 
   // add to cart
   Future<void> addToCart(String productId, double price) async {
@@ -254,6 +304,48 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     );
   }
 
+  // Add this new weather display widget
+  Widget _buildWeatherInfo() {
+    if (_weatherError != null) {
+      return Text(
+        _weatherError!,
+        style: TextStyle(fontSize: 14, color: Colors.red[300]),
+      );
+    }
+
+    if (_weatherInfo == null) {
+      return Text(
+        'Loading weather...',
+        style: TextStyle(fontSize: 14, color: Colors.white70),
+      );
+    }
+
+    return GestureDetector(
+      onTap: _loadWeather, // Refresh weather on tap
+      child: Row(
+        children: [
+          // Icon and Temperature
+          Text(
+            '${_weatherInfo!.weatherIcon} ${_weatherInfo!.temperature.toStringAsFixed(1)}°C',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          SizedBox(width: 4),
+
+          // Description Text (Wrapped in Expanded to prevent overflow)
+          Expanded(
+            child: Text(
+              _weatherInfo!.description,
+              style: TextStyle(fontSize: 14, color: Colors.white70),
+              overflow: TextOverflow.ellipsis, // Ensures text doesn't overflow
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,14 +395,15 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                     child: Icon(Icons.person, size: 40, color: Colors.green),
                   ),
                   SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Hello, ${farmerName ?? 'User'}',
-                          style: TextStyle(fontSize: 20, color: Colors.white)),
-                      Text('31°C | Few Clouds ☁',
-                          style: TextStyle(color: Colors.white)),
-                    ],
+                  Expanded(  // Wrap the column with Expanded to ensure it doesn't overflow
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Hello, ${farmerName ?? 'User'}',
+                            style: TextStyle(fontSize: 20, color: Colors.white)),
+                        _buildWeatherInfo(),
+                      ],
+                    ),
                   ),
                   Spacer(),
                   Icon(Icons.account_balance_wallet, color: Colors.white),
@@ -318,6 +411,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                   Text('0 Coins', style: TextStyle(color: Colors.white)),
                 ],
               ),
+
               SizedBox(height: 10),
               TextField(
                 decoration: InputDecoration(
