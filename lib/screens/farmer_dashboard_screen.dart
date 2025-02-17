@@ -6,10 +6,6 @@ import 'package:flutter_carousel_slider/carousel_slider.dart';
 import 'wishlist_screen.dart';
 import 'cart_screen.dart';
 import 'weather_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-
-
 
 class FarmerDashboardScreen extends StatefulWidget {
   final User user;
@@ -100,31 +96,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
       setState(() => _weatherError = e.toString());
     }
   }
-
-
-  // // Get current location (latitude and longitude)
-  // Future<Position> _getCurrentLocation() async {
-  //   // Check if location services are enabled
-  //   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //   if (!serviceEnabled) {
-  //     return Future.error('Location services are disabled.');
-  //   }
-  //
-  //   // Request permission to access the location
-  //   LocationPermission permission = await Geolocator.requestPermission();
-  //   if (permission == LocationPermission.denied) {
-  //     return Future.error('Location permissions are denied.');
-  //   }
-  //
-  //   if (permission == LocationPermission.deniedForever) {
-  //     return Future.error('Location permissions are permanently denied.');
-  //   }
-  //
-  //   // Get the current location
-  //   return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-  // }
-
-
 
 
   // add to cart

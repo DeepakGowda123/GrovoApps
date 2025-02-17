@@ -129,6 +129,7 @@ dependencies:
   flutter_carousel_slider: ^1.1.0
   geolocator: ^10.1.0
   geocoding: ^2.0.5
+  #upi_india: ^3.0.1
 
 
 flutter:
