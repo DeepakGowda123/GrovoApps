@@ -362,7 +362,7 @@ class _ViewProductsScreenState extends State<ViewProductsScreen> {
             ],
           ),
           title: Text(product['name'] ?? '', style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text("Price: \$${product['price']} - Available: ${product['availability']} items"),
+          subtitle: Text("Price: \₹${product['price']} - Available: ${product['availability']} items"),
           trailing: _isSelectionMode
               ? Icon(
             isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
