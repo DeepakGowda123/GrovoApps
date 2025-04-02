@@ -165,17 +165,17 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart'; // Import your Splash Screen
-import 'screens/selection_page.dart'; // Import your Selection Page
-import 'screens/vendor_auth_screen.dart'; // Import your Vendor Authentication Screen
-import 'screens/vendor_dashboard_screen.dart'; // Import Vendor Dashboard Screen
+import 'screens/splash_screen.dart';
+import 'screens/selection_page.dart';
+import 'screens/vendor_auth_screen.dart';
+import 'screens/vendor_dashboard_screen.dart';
 import 'services/location_service.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/add_product_screen.dart'; // Import your AddProductScreen or the main screen
+import 'screens/add_product_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
@@ -187,16 +187,16 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      initialRoute: '/', // Set initial route
+      initialRoute: '/',
       routes: {
-        '/': (context) => SplashScreen(), // Splash screen route
-        '/selection': (context) => SelectionPage(), // Page for role selection (Farmer/Vendor)
-        '/vendorAuth': (context) => VendorAuthScreen(), // Vendor Authentication screen
+        '/': (context) => SplashScreen(),
+        '/selection': (context) => SelectionPage(),
+        '/vendorAuth': (context) => VendorAuthScreen(),
         '/vendorDashboard': (context) {
           final user = ModalRoute.of(context)!.settings.arguments as User;
-          return VendorDashboardScreen(user: user); // Vendor Dashboard with user
+          return VendorDashboardScreen(user: user);
         },
-        // Add other routes as needed
+
       },
     );
   }
