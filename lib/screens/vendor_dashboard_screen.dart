@@ -52,18 +52,18 @@ class VendorDashboardScreen extends StatelessWidget {
           },
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {
-              // Navigate to Notifications Screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NotificationsScreen(user: user), // Pass user here
-                ),
-              );
-            },
-          ),
+          // IconButton(
+          //   icon: Icon(Icons.notifications, color: Colors.black),
+          //   onPressed: () {
+          //     // Navigate to Notifications Screen
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => NotificationsScreen(user: user), // Pass user here
+          //       ),
+          //     );
+          //   },
+          // ),
           IconButton(
             icon: Icon(Icons.account_circle, color: Colors.black),
             onPressed: () {
@@ -225,13 +225,13 @@ class VendorDashboardScreen extends StatelessWidget {
                               Colors.red,
                                   () {
                                 // Navigate to Notifications Screen
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        NotificationsScreen(user: user), // Pass user here
-                                  ),
-                                );
+                                // Navigator.push(
+                                //   context,
+                                //   // MaterialPageRoute(
+                                //   //   builder: (context) =>
+                                //   //       //NotificationsScreen(user: user), // Pass user here
+                                //   // ),
+                                // );
                               },
                             ),
                           ],

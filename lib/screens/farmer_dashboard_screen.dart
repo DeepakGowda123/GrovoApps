@@ -6,11 +6,19 @@ import 'package:flutter_carousel_slider/carousel_slider.dart';
 import 'wishlist_screen.dart';
 import 'cart_screen.dart';
 import 'weather_service.dart';
+import 'notifications_screen.dart';
+import 'package:grovo_app/services/notification_service.dart';
+import 'heads_up_notification.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 
 class FarmerDashboardScreen extends StatefulWidget {
   final User user;
 
   FarmerDashboardScreen({required this.user});
+
+
+
 
 
 
@@ -34,6 +42,11 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   Map<String, List<Map<String, dynamic>>> _categorizedProducts = {};
   final String farmerId = FirebaseAuth.instance.currentUser!.uid; // Get logged-in farmer ID
   List<String> wishlist = []; // Store wishlist locally for UI update
+
+
+  final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  Map<String, dynamic>? _inAppNotification;
 
 
 
@@ -84,7 +97,84 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     fetchWishlist(); // Load wishlist when screen opens
     _loadWeather(); // Call the function to load weather data
     //_getLocationAndFetchWeather();
+
+    _initializeNotification();
+    _listenToNotifications();
+    NotificationService().notificationStream.listen((notification) {
+      setState(() {
+        _inAppNotification = notification;
+      });
+    });
+
   }
+
+  void _initializeNotification() async {
+    const AndroidInitializationSettings androidSettings =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidSettings,
+    );
+
+    await _localNotificationsPlugin.initialize(initSettings);
+  }
+
+  void _listenToNotifications() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: user.uid)
+        .where('seen', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      for (var doc in snapshot.docs) {
+        final notification = {
+          'title': doc['title'],
+          'message': doc['body'],
+        };
+
+        _showLocalNotification(notification['title']!, notification['message']!);
+        NotificationService().showInAppNotification(notification);
+
+        doc.reference.update({'seen': true});
+      }
+    });
+  }
+
+
+  Future<void> _showLocalNotification(String title, String body) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'important_channel',
+      'Important Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await _localNotificationsPlugin.show(
+      0,
+      title,
+      body,
+      platformDetails,
+    );
+  }
+
+
+
+
+
+
+
+
+
+
 
   // Add this new weather loading function
   Future<void> _loadWeather() async {
@@ -320,226 +410,239 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          title: Text('Farmer Dashboard'),
-          elevation: 0,
-          backgroundColor: Colors.green,
-          actions: [
-            IconButton(
-              icon: Icon(Icons.favorite),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => WishlistScreen()),
-                );
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.shopping_cart),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CartScreen()),
-                );
-              },
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-              children: [
-          // Profile & Weather Info
-          Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green,
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Colors.green),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(  // Wrap the column with Expanded to ensure it doesn't overflow
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Hello, ${farmerName ?? 'User'}',
-                            style: TextStyle(fontSize: 20, color: Colors.white)),
-                        _buildWeatherInfo(),
-                      ],
-                    ),
-                  ),
-                  Spacer(),
-                  Icon(Icons.account_balance_wallet, color: Colors.white),
-                  SizedBox(width: 5),
-                  Text('0 Coins', style: TextStyle(color: Colors.white)),
-                ],
-              ),
-
-              SizedBox(height: 10),
-              TextField(
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  hintText: 'Search products here',
-                  prefixIcon: Icon(Icons.search),
-                  suffixIcon: Icon(Icons.mic, color: Colors.orange),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Horizontal Categories
-        SizedBox(
-          height: 110,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: categories.map((category) {
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 5)
-                        ],
-                      ),
-                      child: Image.asset(
-                        category['image']!,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.error, color: Colors.red);
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(category['name']!,
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.bold)),
-                  ],
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: Text('Farmer Dashboard'),
+        elevation: 0,
+        backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AllNotificationsScreen(user: FirebaseAuth.instance.currentUser),
                 ),
               );
-            }).toList(),
+            },
           ),
-        ),
-
-        // Auto Sliding Promotional Banner
-        Container(
-          height: 180,
-          child: CarouselSlider(
-            slideTransform: CubeTransform(),
-            slideIndicator: CircularSlideIndicator(
-              padding: EdgeInsets.only(bottom: 10),
-            ),
-            enableAutoSlider: true, // ✅ Enable auto-sliding
-            autoSliderDelay: Duration(seconds: 5), // ✅ Change slide every 2 seconds
-            autoSliderTransitionTime: Duration(milliseconds: 2500), // ✅ Smooth transition
-            unlimitedMode: true, // ✅ Enables infinite looping
-            children: promoImages.map((image) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 5),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(
-                    image,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: Icon(Icons.image_not_supported, size: 50),
-                      );
-                    },
-                  ),
-                ),
+          IconButton(
+            icon: Icon(Icons.favorite),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => WishlistScreen()),
               );
-            }).toList(),
+            },
           ),
-        ),
-
-
-        // Grid-Based Categories (Second Display)
-        Padding(
-        padding: EdgeInsets.all(16),
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Text(
-    "Categories",
-    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    ),
-    SizedBox(height: 10),
-    GridView.builder(
-    shrinkWrap: true,
-    physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside GridView
-    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 3, // 3 columns
-    crossAxisSpacing: 10,
-    mainAxisSpacing: 10,
-    childAspectRatio: 0.9, // Adjust size
-    ),
-    itemCount: categories.length,
-    itemBuilder: (context, index) {
-    var category = categories[index];
-    return GestureDetector(
-      onTap: () {
-        // Navigate to category-specific product list (To be implemented)
-        print("Selected Category: ${category['name']}");
-      },
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 5,
-                ),
-              ],
-            ),
-            child: Image.asset(
-              category['image']!,
-              width: 50,
-              height: 50,
-              fit: BoxFit.contain,
-            ),
-          ),
-          SizedBox(height: 5),
-          Text(
-            category['name']!,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          IconButton(
+            icon: Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CartScreen()),
+              );
+            },
           ),
         ],
       ),
-    );
-    },
-    ),
-    ],
-    ),
-        ),
+      body: Stack(
+        children: [
+          // Main scrollable content
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // Profile & Weather Info
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.person, size: 40, color: Colors.green),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(  // Wrap the column with Expanded to ensure it doesn't overflow
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Hello, ${farmerName ?? 'User'}',
+                                    style: TextStyle(fontSize: 20, color: Colors.white)),
+                                _buildWeatherInfo(),
+                              ],
+                            ),
+                          ),
+                          Spacer(),
+                          Icon(Icons.account_balance_wallet, color: Colors.white),
+                          SizedBox(width: 5),
+                          Text('0 Coins', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+
+                      SizedBox(height: 10),
+                      TextField(
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          hintText: 'Search products here',
+                          prefixIcon: Icon(Icons.search),
+                          suffixIcon: Icon(Icons.mic, color: Colors.orange),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Horizontal Categories
+                SizedBox(
+                  height: 110,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: categories.map((category) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black12, blurRadius: 5)
+                                ],
+                              ),
+                              child: Image.asset(
+                                category['image']!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(Icons.error, color: Colors.red);
+                                },
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(category['name']!,
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                // Auto Sliding Promotional Banner
+                Container(
+                  height: 180,
+                  child: CarouselSlider(
+                    slideTransform: CubeTransform(),
+                    slideIndicator: CircularSlideIndicator(
+                      padding: EdgeInsets.only(bottom: 10),
+                    ),
+                    enableAutoSlider: true, // ✅ Enable auto-sliding
+                    autoSliderDelay: Duration(seconds: 5), // ✅ Change slide every 5 seconds
+                    autoSliderTransitionTime: Duration(milliseconds: 2500), // ✅ Smooth transition
+                    unlimitedMode: true, // ✅ Enables infinite looping
+                    children: promoImages.map((image) {
+                      return Container(
+                        margin: EdgeInsets.symmetric(horizontal: 5),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(
+                            image,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: Icon(Icons.image_not_supported, size: 50),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                // Grid-Based Categories (Second Display)
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Categories",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 10),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside GridView
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3, // 3 columns
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.9, // Adjust size
+                        ),
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          var category = categories[index];
+                          return GestureDetector(
+                            onTap: () {
+                              // Navigate to category-specific product list (To be implemented)
+                              print("Selected Category: ${category['name']}");
+                            },
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 5,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Image.asset(
+                                    category['image']!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  category['name']!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Brands Section
                 Padding(
@@ -796,7 +899,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                                         ),
                                       ),
                                     );
-
                                   },
                                 ),
                               ),
@@ -808,15 +910,28 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                     ],
                   ),
                 ),
-
-                // More sections (Grid Categories, Brands, Products) can be added here...
               ],
+            ),
           ),
-        ),
+
+          // Notification positioned on top
+          if (_inAppNotification != null)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 16,
+              right: 16,
+              child: HeadsUpNotification(
+                notification: _inAppNotification!,
+                onTap: () {
+                  setState(() => _inAppNotification = null);
+                },
+                onDismiss: () {
+                  setState(() => _inAppNotification = null);
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
-
-
-
-//96863 52411
