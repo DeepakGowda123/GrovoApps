@@ -165,6 +165,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:grovo_app/screens/notifications_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/selection_page.dart';
 import 'screens/vendor_auth_screen.dart';
@@ -172,6 +173,7 @@ import 'screens/vendor_dashboard_screen.dart';
 import 'services/location_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/add_product_screen.dart';
+import 'package:grovo_app/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -180,9 +182,15 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+
+  MyApp({Key? key}) : super(key: key);
+
+  final NotificationService _notificationService = NotificationService();
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _notificationService.navigatorKey,
       title: 'Grovo',
       theme: ThemeData(
         primarySwatch: Colors.green,
@@ -196,7 +204,7 @@ class MyApp extends StatelessWidget {
           final user = ModalRoute.of(context)!.settings.arguments as User;
           return VendorDashboardScreen(user: user);
         },
-
+        '/notifications' : (context) => AllNotificationsScreen(user: FirebaseAuth.instance.currentUser),
       },
     );
   }

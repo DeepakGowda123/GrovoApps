@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+
 
 class OrderManagementScreen extends StatefulWidget {
   final User? user;
@@ -65,6 +67,26 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
     );
   }
 
+  Future<void> sendOrderStatusNotification(String orderId, String newStatus, String farmerId) async {
+    try {
+      final HttpsCallable callable =
+      FirebaseFunctions.instance.httpsCallable('sendOrderStatusNotification');
+
+      final result = await callable.call({
+        'orderId': orderId,
+        'newStatus': newStatus,
+        'farmerId': farmerId,
+      });
+
+      print('✅ Notification sent: ${result.data}');
+    } catch (e) {
+      print('❌ Error sending notification: $e');
+    }
+  }
+
+
+
+  // Method to update the order status and send push notification
   Future<void> _updateOrderStatus(String orderId, String farmerId, String newStatus) async {
     try {
       // Update order status in Firestore
@@ -72,8 +94,11 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
         'status': newStatus,
       });
 
-      // Send notification to farmer
-      _sendStatusUpdateNotification(farmerId, orderId, newStatus);
+      // Create in-app notification in Firestore
+      await _sendStatusUpdateNotification(farmerId, orderId, newStatus);
+
+      // Send push notification to farmer using Firebase Cloud Function
+      await sendOrderStatusNotification(orderId, newStatus, farmerId);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Order status updated to $newStatus')),
@@ -85,9 +110,8 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
     }
   }
 
+  // Store the order status update in Firestore (for in-app notifications)
   Future<void> _sendStatusUpdateNotification(String farmerId, String orderId, String newStatus) async {
-    // In a real app, you would use Firebase Cloud Messaging here
-    // For now, we'll just store a notification in Firestore
     await _firestore.collection('notifications').add({
       'userId': farmerId,
       'title': 'Order Status Update',

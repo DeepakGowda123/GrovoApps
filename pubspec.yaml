@@ -134,6 +134,8 @@ dependencies:
   #upi_india: ^3.0.1
   flutter_local_notifications: ^19.0.0  # Replace with actual version like 9.1.5
   audioplayers: ^5.2.1  # ✅ Use a valid, latest version
+  cloud_functions: ^5.3.2
+
 
 
 flutter:

@@ -8,7 +8,7 @@ import 'cart_screen.dart';
 import 'weather_service.dart';
 import 'notifications_screen.dart';
 import 'package:grovo_app/services/notification_service.dart';
-import 'heads_up_notification.dart';
+//import 'heads_up_notification.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 
@@ -17,16 +17,9 @@ class FarmerDashboardScreen extends StatefulWidget {
 
   FarmerDashboardScreen({required this.user});
 
-
-
-
-
-
   @override
   _FarmerDashboardScreenState createState() => _FarmerDashboardScreenState();
 }
-
-
 
 class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -47,8 +40,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   Map<String, dynamic>? _inAppNotification;
-
-
 
   // Updated Categories
   List<Map<String, String>> categories = [
@@ -87,6 +78,25 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   @override
   void initState() {
     super.initState();
+
+    // 🔔 Initialize Notification Service
+    final notificationService = NotificationService();
+    notificationService.initialize().then((_) {
+      // Optionally display unread notifications when screen opens
+      notificationService.showUnreadNotifications(); // You’ll need to define this method if not already present
+    });
+
+    // 🔔 Listen to incoming notifications (in-app)
+    notificationService.notificationStream.listen((notification) {
+      setState(() {
+        _inAppNotification = notification; // Update your in-app notification UI
+      });
+    });
+
+
+
+
+
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
@@ -98,13 +108,15 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     _loadWeather(); // Call the function to load weather data
     //_getLocationAndFetchWeather();
 
+    // NotificationService().initialize();
+    // NotificationService().notificationStream.listen((notification) {
+    //   setState(() {
+    //     _inAppNotification = notification;
+    //   });
+    // });
+
     _initializeNotification();
     _listenToNotifications();
-    NotificationService().notificationStream.listen((notification) {
-      setState(() {
-        _inAppNotification = notification;
-      });
-    });
 
   }
 
