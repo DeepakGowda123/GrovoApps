@@ -29,6 +29,8 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final currentVendorId = _auth.currentUser?.uid;
+    // Add this debug print
+    print('Current vendor ID in OrderManagementScreen: $currentVendorId');
 
     return Scaffold(
       appBar: AppBar(
@@ -40,6 +42,17 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
             .where('vendorId', isEqualTo: currentVendorId)
             .snapshots(),
         builder: (context, snapshot) {
+          // Add these debug prints
+          print('StreamBuilder state: ${snapshot.connectionState}');
+          print('Has data: ${snapshot.hasData}');
+          if (snapshot.hasData) {
+            print('Number of orders found: ${snapshot.data!.docs.length}');
+          }
+          if (snapshot.hasError) {
+            print('StreamBuilder error: ${snapshot.error}');
+          }
+
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
