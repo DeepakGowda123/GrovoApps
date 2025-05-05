@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'farmer_dashboard_screen.dart';
+import 'package:grovo_app/screens/nav_section.dart';
 
 class FarmerAuthScreen extends StatefulWidget {
   @override
@@ -69,7 +70,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => FarmerDashboardScreen(user: userCredential.user!),
+            builder: (context) => MainNavigationScreen(user: userCredential.user!),
           ),
         );
       } else {
@@ -110,7 +111,7 @@ class _FarmerAuthScreenState extends State<FarmerAuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => FarmerDashboardScreen(user: userCredential.user!),
+            builder: (context) => MainNavigationScreen(user: userCredential.user!),
           ),
         );
       } else {
