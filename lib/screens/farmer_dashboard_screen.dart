@@ -180,14 +180,6 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
 
 
 
-
-
-
-
-
-
-
-
   // Add this new weather loading function
   Future<void> _loadWeather() async {
     try {

@@ -145,12 +145,15 @@ class ToolsScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            Text(
-                              tool['title'] as String,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF424242),
+                            Expanded(
+                              child: Text(
+                                tool['title'] as String,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF424242),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -222,6 +225,8 @@ class ToolsScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+                        // Add padding at the bottom to prevent overflow with the safe area
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -248,6 +253,7 @@ class ToolsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -331,6 +337,8 @@ class ToolsScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF424242),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(

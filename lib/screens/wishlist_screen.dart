@@ -26,6 +26,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
         error = null;
       });
 
+      final String farmerId = FirebaseAuth.instance.currentUser!.uid;
+
       // Get farmer's wishlist
       DocumentSnapshot farmerDoc = await FirebaseFirestore.instance
           .collection('farmers')

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:grovo_app/screens/request_worker_screen.dart';
 import 'package:grovo_app/screens/my_requests_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:grovo_app/screens/accepted_workers_screen.dart';
 
 class FarmerWorkDashboard extends StatelessWidget {
-  const FarmerWorkDashboard({super.key});
+  final User user;
+  const FarmerWorkDashboard({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +26,9 @@ class FarmerWorkDashboard extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const RequestWorkerScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => RequestWorkerScreen(user: user), // ✅ pass again
+                  ),
                 );
               },
             ),
@@ -37,6 +42,21 @@ class FarmerWorkDashboard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const MyRequestsScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            _buildMainTile(
+              context,
+              icon: Icons.work_outline,
+              title: 'Accepted Workers',
+              subtitle: 'Manage accepted or ongoing jobs',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AcceptedWorkersScreen(user: user),
+                  ),
                 );
               },
             ),

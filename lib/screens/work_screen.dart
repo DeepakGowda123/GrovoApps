@@ -252,7 +252,9 @@ class WorkScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const FarmerWorkDashboard()),
+                  MaterialPageRoute(
+                    builder: (context) => FarmerWorkDashboard(user: user), // ✅ pass user
+                  ),
                 );
               },
             ),
