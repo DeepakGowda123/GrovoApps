@@ -6,9 +6,9 @@ A comprehensive mobile application built with Flutter and Firebase that revoluti
 
 **Grovo** is a mobile application tailored for the agriculture domain that addresses critical communication gaps by providing a centralized platform for agricultural commerce and workforce management.
 
-The project is developed in **two phases**:
+The project was developed in **two phases**:
 - **Phase 1**: Farmer–Vendor commerce system ✅
-- **Phase 2**: Landlord–Worker job/task hiring system 🚧
+- **Phase 2**: Landlord–Worker job/task hiring system ✅
 
 ### 🎯 Key Features
 
@@ -244,8 +244,8 @@ lib/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/grovo-apps.git
-   cd grovo-apps
+   git clone https://github.com/DeepakGowda123/College-Project.git
+   cd College-Project
    ```
 
 2. **Install dependencies**
@@ -255,13 +255,16 @@ lib/
 
 3. **Firebase Configuration**
    - Create a new Firebase project
-   - Add `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
+   - Download `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
+   - Place them in respective directories
    - Enable Authentication, Firestore, and Storage
 
 4. **API Keys Setup**
-   - Configure Razorpay credentials
-   - Set up OpenWeather API key
-   - Add Google Maps API key (if used)
+   - Copy `lib/config/api_keys.example.dart` to `lib/config/api_keys.dart`
+   - Replace placeholder values with your actual API keys:
+     - Razorpay API key
+     - OpenWeather API key
+     - Google Maps API key (if used)
 
 5. **Run the application**
    ```bash
@@ -340,13 +343,13 @@ notifications/
 - [x] Notification system
 - [x] Weather integration
 
-### Phase 2 Status: 🚧 In Progress
-- [ ] Landlord-Worker hiring system
-- [ ] Aadhar verification system
-- [ ] Escrow payment mechanism
-- [ ] Task management workflow
-- [ ] Rating and review system
-- [ ] Advanced location services
+### Phase 2 Status: ✅ Complete
+- [x] Landlord-Worker hiring system
+- [x] Aadhar verification system
+- [x] Escrow payment mechanism
+- [x] Task management workflow
+- [x] Rating and review system
+- [x] Advanced location services
 
 ## 📈 Future Enhancements
 
@@ -367,7 +370,7 @@ notifications/
 
 ## 🤝 Contributing
 
-This project was developed as part of MCA final semester project at PES University. The codebase demonstrates:
+This project was developed as part of MCA capstone project at PES University, Bengaluru. The codebase demonstrates:
 
 - **Clean Architecture**: Separation of concerns
 - **Scalable Design**: Modular component structure
@@ -380,11 +383,12 @@ This project is developed for educational and portfolio purposes.
 
 ## 👨‍💻 Developer
 
-**[Your Name]**
-- MCA Graduate, PES University (2024-2025)
-- 📧 Email: [your.email@example.com]
-- 💼 LinkedIn: [your-linkedin-profile]
-- 🌐 Portfolio: [your-portfolio-website]
+**Deepak A S**
+- MCA Student, PES University, Bengaluru (2024-2025)
+- 📧 Email: deepak.gowda1215@gmail.com
+- 💼 LinkedIn: https://www.linkedin.com/in/deepak-a-s-7a2aa3264/
+- 🌐 GitHub: https://github.com/DeepakGowda123
+- 📱 Mobile: +91 8792025278
 
 ## 📞 Contact
 
