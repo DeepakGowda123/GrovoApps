@@ -1,0 +1,2 @@
+D:/grovo_app/android/app/.cxx/Debug/2q1n1j6i/x86/CMakeFiles/edit_cache.dir
+D:/grovo_app/android/app/.cxx/Debug/2q1n1j6i/x86/CMakeFiles/rebuild_cache.dir

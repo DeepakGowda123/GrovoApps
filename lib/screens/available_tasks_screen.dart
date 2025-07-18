@@ -11,17 +11,29 @@ class AvailableTasksScreen extends StatefulWidget {
   State<AvailableTasksScreen> createState() => _AvailableTasksScreenState();
 }
 
-class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
+class _AvailableTasksScreenState extends State<AvailableTasksScreen>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   bool _isVerified = false;
   String? _aadharNumber;
   String? _userPhone;
   List<Map<String, dynamic>> _availableTasks = [];
+  List<Map<String, dynamic>> _acceptedTasks = [];
+  List<Map<String, dynamic>> _completedTasks = [];
+
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _checkAadharStatus();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkAadharStatus() async {
@@ -41,7 +53,7 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
           _aadharNumber = aadhar;
         });
 
-        await _fetchAvailableTasks();
+        await _fetchAllTasks();
       }
     }
 
@@ -113,9 +125,20 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
       _isVerified = true;
     });
 
-    await _fetchAvailableTasks();
+    await _fetchAllTasks();
 
     _showSnackBar('Verification complete ✅');
+  }
+
+  Future<void> _fetchAllTasks() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Fetch available tasks (not accepted by anyone)
+    await _fetchAvailableTasks();
+
+    // Fetch worker's accepted/completed tasks
+    await _fetchWorkerTasks();
   }
 
   Future<void> _fetchAvailableTasks() async {
@@ -123,11 +146,10 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
     if (user == null) return;
 
     final farmersSnapshot = await FirebaseFirestore.instance.collection('farmers').get();
-
     final List<Map<String, dynamic>> tasks = [];
 
     for (var farmerDoc in farmersSnapshot.docs) {
-      if (farmerDoc.id == user.uid) continue;
+      if (farmerDoc.id == user.uid) continue; // Skip own tasks
 
       final workerRequests = await FirebaseFirestore.instance
           .collection('farmers')
@@ -137,13 +159,51 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
 
       for (var taskDoc in workerRequests.docs) {
         final data = taskDoc.data();
-        if (data['status'] == 'paid') {
-          tasks.add({...data, 'id': taskDoc.id});
+        if (data['status'] == 'paid') { // Only available tasks
+          tasks.add({
+            ...data,
+            'id': taskDoc.id,
+            'landlordId': farmerDoc.id, // Ensure landlordId is included
+          });
         }
       }
     }
 
     setState(() => _availableTasks = tasks);
+  }
+
+  Future<void> _fetchWorkerTasks() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Fetch all tasks accepted by this worker
+    final acceptedTasksSnapshot = await FirebaseFirestore.instance
+        .collection('farmers')
+        .doc(user.uid)
+        .collection('acceptedRequests')
+        .get();
+
+    final List<Map<String, dynamic>> acceptedTasks = [];
+    final List<Map<String, dynamic>> completedTasks = [];
+
+    for (var taskDoc in acceptedTasksSnapshot.docs) {
+      final data = taskDoc.data();
+      final taskWithId = {
+        ...data,
+        'id': taskDoc.id,
+      };
+
+      if (data['status'] == 'accepted') {
+        acceptedTasks.add(taskWithId);
+      } else if (data['status'] == 'completed') {
+        completedTasks.add(taskWithId);
+      }
+    }
+
+    setState(() {
+      _acceptedTasks = acceptedTasks;
+      _completedTasks = completedTasks;
+    });
   }
 
   void _showSnackBar(String msg) {
@@ -200,38 +260,125 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
     );
   }
 
-  Widget _buildTaskList() {
-    return ListView.builder(
-      itemCount: _availableTasks.length,
-      padding: const EdgeInsets.all(12),
-      itemBuilder: (context, index) {
-        final task = _availableTasks[index];
+  Widget _buildTaskCard(Map<String, dynamic> task, {String? statusLabel, Color? statusColor}) {
+    if (task == null) {
+      return const SizedBox.shrink();
+    }
 
-        // Defensive null check
-        if (task == null) {
-          return const SizedBox.shrink(); // Or show error widget
-        }
-
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: ListTile(
-            title: Text('${task['workType']} - ₹${task['amount']}'),
-            subtitle: Text('${task['location']} • ${task['workDuration']}'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TaskDetailScreen(
-                    task: task,
-                    taskId: task['id'], // ✅ FIXED: Use task['id'] instead of doc.id
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      elevation: 2,
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${task['workType']} - ₹${task['amount']}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (statusLabel != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor?.withOpacity(0.1) ?? Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: statusColor ?? Colors.grey),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor ?? Colors.grey.shade700,
                   ),
                 ),
-              );
-            },
-          ),
-        );
-      },
+              ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Text('📍 ${task['location']} • ⏰ ${task['workDuration']}'),
+            Text('📅 ${task['startDate']} - ${task['endDate']}'),
+            if (task['status'] == 'completed' && task['paymentReleased'] == true)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: const Text(
+                  '💰 Payment Released',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TaskDetailScreen(
+                task: task,
+                taskId: task['id'],
+              ),
+            ),
+          ).then((_) {
+            // Refresh tasks when coming back from task detail screen
+            _fetchAllTasks();
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildTaskList(List<Map<String, dynamic>> tasks, {String? emptyMessage, String? statusLabel, Color? statusColor}) {
+    if (tasks.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.task_alt,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              emptyMessage ?? 'No tasks available',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchAllTasks,
+      child: ListView.builder(
+        itemCount: tasks.length,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemBuilder: (context, index) {
+          return _buildTaskCard(
+            tasks[index],
+            statusLabel: statusLabel,
+            statusColor: statusColor,
+          );
+        },
+      ),
     );
   }
 
@@ -259,6 +406,85 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
     );
   }
 
+  Widget _buildTabBarView() {
+    return Column(
+      children: [
+        _buildVerifiedBanner(),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.grey.shade600,
+            indicator: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.blue,
+            ),
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.work_outline, size: 16),
+                    const SizedBox(width: 4),
+                    Text('Available (${_availableTasks.length})'),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.schedule, size: 16),
+                    const SizedBox(width: 4),
+                    Text('Accepted (${_acceptedTasks.length})'),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle, size: 16),
+                    const SizedBox(width: 4),
+                    Text('Completed (${_completedTasks.length})'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildTaskList(
+                _availableTasks,
+                emptyMessage: 'No available tasks at the moment',
+              ),
+              _buildTaskList(
+                _acceptedTasks,
+                emptyMessage: 'No accepted tasks',
+                statusLabel: 'IN PROGRESS',
+                statusColor: Colors.blue,
+              ),
+              _buildTaskList(
+                _completedTasks,
+                emptyMessage: 'No completed tasks yet',
+                statusLabel: 'COMPLETED',
+                statusColor: Colors.green,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -268,10 +494,19 @@ class _AvailableTasksScreenState extends State<AvailableTasksScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Available Tasks')),
-      body: !_isVerified ? _buildVerificationPrompt() : Column(children: [_buildVerifiedBanner(),Expanded(child: _buildTaskList()),
-      ]
-      ) ,
+      appBar: AppBar(
+        title: const Text('Tasks'),
+        actions: [
+          if (_isVerified)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _fetchAllTasks,
+            ),
+        ],
+      ),
+      body: !_isVerified
+          ? _buildVerificationPrompt()
+          : _buildTabBarView(),
     );
   }
 }

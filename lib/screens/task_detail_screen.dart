@@ -21,16 +21,44 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   bool _isTaskAccepted = false;
   bool _loading = false;
   Map<String, dynamic>? _landlordInfo;
-
   bool _hasRatedLandlord = false;
-
-
+  Map<String, dynamic>? _taskData; // Store real-time task data
 
   @override
   void initState() {
     super.initState();
     _checkIfAlreadyAccepted();
     _fetchLandlordInfo();
+    _listenToTaskUpdates(); // Listen for real-time updates
+  }
+
+  // Listen to real-time task updates
+  void _listenToTaskUpdates() {
+    final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+    FirebaseFirestore.instance
+        .collection('farmers')
+        .doc(currentUid)
+        .collection('acceptedRequests')
+        .doc(widget.taskId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        setState(() {
+          _taskData = snapshot.data();
+          _hasRatedLandlord = _taskData?['workerRated'] == true;
+        });
+
+        // Check if task just got completed and worker hasn't rated yet
+        final status = _taskData?['status'];
+        if (status == 'completed' && !_hasRatedLandlord) {
+          // Small delay to ensure UI is built before showing dialog
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _showLandlordRatingDialog();
+          });
+        }
+      }
+    });
   }
 
   Future<void> _fetchLandlordInfo() async {
@@ -65,7 +93,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     setState(() {
       _isTaskAccepted = snapshot.exists;
-      _hasRatedLandlord = snapshot.data()?['workerRated'] == true;
+      if (snapshot.exists) {
+        _taskData = snapshot.data();
+        _hasRatedLandlord = _taskData?['workerRated'] == true;
+      }
     });
   }
 
@@ -133,56 +164,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 
-  Future<void> _completeTask() async {
-    setState(() => _loading = true);
-
-    try {
-      final landlordId = widget.task['landlordId'];
-      final workerUid = FirebaseAuth.instance.currentUser!.uid;
-
-      // Update task status to completed
-      await FirebaseFirestore.instance
-          .collection('farmers')
-          .doc(landlordId)
-          .collection('workerRequests')
-          .doc(widget.taskId)
-          .update({
-        'status': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Update in worker's accepted requests
-      await FirebaseFirestore.instance
-          .collection('farmers')
-          .doc(workerUid)
-          .collection('acceptedRequests')
-          .doc(widget.taskId)
-          .update({
-        'status': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Task marked as completed!')),
-      );
-
-      // 👉 Show landlord rating dialog after completion
-      await _showLandlordRatingDialog();
-
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Failed to complete task: $e')),
-      );
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-
-
   Future<void> _showLandlordRatingDialog() async {
-    if (_hasRatedLandlord) return; // 👈 Prevent showing dialog again
-
+    if (_hasRatedLandlord) return; // Prevent showing dialog again
 
     final landlordId = widget.task['landlordId'];
     final workerId = FirebaseAuth.instance.currentUser!.uid;
@@ -192,43 +175,66 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rate the Landlord'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Slider(
-              value: rating,
-              onChanged: (value) => setState(() => rating = value),
-              min: 1,
-              max: 5,
-              divisions: 4,
-              label: rating.toStringAsFixed(1),
-            ),
-            TextField(
-              controller: reviewController,
-              decoration: const InputDecoration(hintText: 'Leave a review'),
+      barrierDismissible: false, // Prevent dismissing without rating
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Rate the Landlord'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Please rate your experience with the landlord:'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    onPressed: () {
+                      setDialogState(() {
+                        rating = (index + 1).toDouble();
+                      });
+                    },
+                    icon: Icon(
+                      index < rating ? Icons.star : Icons.star_border,
+                      color: Colors.orange,
+                      size: 32,
+                    ),
+                  );
+                }),
+              ),
+              Text(
+                '${rating.toInt()}/5 stars',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reviewController,
+                decoration: const InputDecoration(
+                  hintText: 'Leave a review (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _submitLandlordRating(
+                  landlordId,
+                  workerId,
+                  rating,
+                  reviewController.text,
+                  taskId,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('⭐ Rating submitted successfully!')),
+                );
+              },
+              child: const Text('Submit Rating'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _submitLandlordRating(
-                landlordId,
-                workerId,
-                rating,
-                reviewController.text,
-                taskId,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('⭐ Rating submitted successfully!')),
-              );
-            },
-            child: const Text('Submit'),
-          ),
-        ],
       ),
     );
   }
@@ -240,53 +246,76 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       String review,
       String taskId,
       ) async {
-    final landlordRef = FirebaseFirestore.instance.collection('farmers').doc(landlordId);
+    try {
+      final landlordRef = FirebaseFirestore.instance.collection('farmers').doc(landlordId);
 
-    final ratingData = {
-      'workerId': workerId,
-      'rating': rating,
-      'review': review,
-      'taskId': taskId,
-      'timestamp': FieldValue.serverTimestamp(),
-    };
+      // Use regular Timestamp instead of server timestamp for arrays
+      final ratingData = {
+        'workerId': workerId,
+        'rating': rating,
+        'review': review,
+        'taskId': taskId,
+        'timestamp': Timestamp.now(), // This is fine for arrays
+      };
 
-    final docSnapshot = await landlordRef.get();
-    final current = docSnapshot.data()?['ratingAsLandlord'];
+      // Get current document data
+      final docSnapshot = await landlordRef.get();
+      final currentData = docSnapshot.data();
+      final current = currentData?['ratingAsLandlord'];
 
-    double totalRating = current?['totalRating'] ?? 0.0;
-    int totalReviews = current?['totalReviews'] ?? 0;
+      if (current == null) {
+        // Create the whole map if it doesn't exist
+        await landlordRef.set({
+          ...currentData ?? {}, // Preserve existing data
+          'ratingAsLandlord': {
+            'totalRating': rating,
+            'totalReviews': 1,
+            'reviews': [ratingData],
+          },
+        }, SetOptions(merge: true)); // Use merge to avoid overwriting other fields
+      } else {
+        // Update existing values
+        double currentTotalRating = (current['totalRating'] ?? 0.0).toDouble();
+        int currentTotalReviews = (current['totalReviews'] ?? 0).toInt();
 
-    totalRating = ((totalRating * totalReviews) + rating) / (totalReviews + 1);
+        // Calculate new average rating
+        double newTotalRating = ((currentTotalRating * currentTotalReviews) + rating) / (currentTotalReviews + 1);
 
-    await landlordRef.update({
-      'ratingAsLandlord.totalRating': totalRating,
-      'ratingAsLandlord.totalReviews': totalReviews + 1,
-      'ratingAsLandlord.reviews': FieldValue.arrayUnion([ratingData])
-    });
+        await landlordRef.update({
+          'ratingAsLandlord.totalRating': newTotalRating,
+          'ratingAsLandlord.totalReviews': currentTotalReviews + 1,
+          'ratingAsLandlord.reviews': FieldValue.arrayUnion([ratingData]),
+        });
+      }
 
-    // ✅ Mark task as rated by worker
-    await FirebaseFirestore.instance
-        .collection('farmers')
-        .doc(workerId)
-        .collection('acceptedRequests')
-        .doc(taskId)
-        .update({'workerRated': true});
+      // Mark task as rated by worker
+      await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(workerId)
+          .collection('acceptedRequests')
+          .doc(taskId)
+          .update({'workerRated': true});
 
-    await FirebaseFirestore.instance
-        .collection('farmers')
-        .doc(landlordId)
-        .collection('workerRequests')
-        .doc(taskId)
-        .update({'workerRated': true});
+      await FirebaseFirestore.instance
+          .collection('farmers')
+          .doc(landlordId)
+          .collection('workerRequests')
+          .doc(taskId)
+          .update({'workerRated': true});
 
+      setState(() {
+        _hasRatedLandlord = true;
+      });
 
+      print('✅ Rating submitted successfully!');
+    } catch (e) {
+      print('❌ Error submitting rating: $e');
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Failed to submit rating: $e')),
+      );
+    }
   }
-
-
-
-
-
-
 
 
   Widget _buildLandlordInfo() {
@@ -325,7 +354,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 const SizedBox(width: 4),
                 Text(
                   totalRating > 0
-                      ? '$totalRating ($totalReviews reviews)'
+                      ? '${totalRating.toStringAsFixed(1)} ($totalReviews reviews)'
                       : 'No ratings yet',
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
@@ -337,13 +366,165 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 
+  Widget _buildStatusCard() {
+    final currentTaskData = _taskData ?? widget.task;
+    final taskStatus = currentTaskData['status'] ?? 'paid';
+    final paymentReleased = currentTaskData['paymentReleased'] == true;
+    final amount = widget.task['amount'] ?? '0';
+
+    if (taskStatus == 'accepted') {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade200),
+        ),
+        child: const Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue, size: 24),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Task Accepted',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              '✅ You have accepted this task. Please complete the work as agreed. The landlord will mark it as completed once done.',
+              style: TextStyle(color: Colors.blue, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (taskStatus == 'completed') {
+      return Column(
+        children: [
+          // Completion Status Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Column(
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 24),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Task Completed! 🎉',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Great job! The landlord has marked this task as completed.',
+                  style: TextStyle(color: Colors.green, fontSize: 14),
+                ),
+                if (!_hasRatedLandlord) ...[
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showLandlordRatingDialog,
+                    icon: const Icon(Icons.star),
+                    label: const Text('Rate Landlord'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Payment Release Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: paymentReleased ? Colors.green.shade50 : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: paymentReleased ? Colors.green.shade200 : Colors.orange.shade200,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      paymentReleased ? Icons.account_balance_wallet : Icons.schedule,
+                      color: paymentReleased ? Colors.green : Colors.orange,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        paymentReleased ? 'Payment Released! 💰' : 'Payment Processing ⏳',
+                        style: TextStyle(
+                          color: paymentReleased ? Colors.green : Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  paymentReleased
+                      ? '✅ ₹$amount has been released to your account via Razorpay.'
+                      : '⏳ Payment of ₹$amount will be released shortly via Razorpay.',
+                  style: TextStyle(
+                    color: paymentReleased ? Colors.green : Colors.orange,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
-    final taskStatus = task['status'] ?? 'paid';
+    final currentTaskData = _taskData ?? task;
+    final taskStatus = currentTaskData['status'] ?? 'paid';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Task Details')),
+      appBar: AppBar(
+        title: const Text('Task Details'),
+        backgroundColor: taskStatus == 'completed' ? Colors.green.shade100 : null,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -356,11 +537,39 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Task Information',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Task Information',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: taskStatus == 'completed'
+                                ? Colors.green.shade100
+                                : taskStatus == 'accepted'
+                                ? Colors.blue.shade100
+                                : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            taskStatus.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: taskStatus == 'completed'
+                                  ? Colors.green.shade700
+                                  : taskStatus == 'accepted'
+                                  ? Colors.blue.shade700
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Text('👨‍🌾 Work Type: ${task['workType'] ?? ''}',
@@ -398,9 +607,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             // Landlord Information Card
             _buildLandlordInfo(),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Action Buttons
+            // Status Card (replaces old action buttons logic)
+            _buildStatusCard(),
+
+            const SizedBox(height: 16),
+
+            // Accept Task Button (only for unpaid tasks)
             if (taskStatus == 'paid' && !_isTaskAccepted)
               ElevatedButton.icon(
                 onPressed: _loading ? null : _acceptTask,
@@ -410,62 +624,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   minimumSize: const Size.fromHeight(50),
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
-                ),
-              ),
-
-            if (_isTaskAccepted && taskStatus == 'accepted')
-              ElevatedButton.icon(
-                onPressed: _loading ? null : _completeTask,
-                icon: const Icon(Icons.task_alt),
-                label: Text(_loading ? 'Completing...' : 'Mark as Completed'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-
-            if (taskStatus == 'accepted')
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '✅ You have accepted this task. Complete the work and mark it as finished.',
-                        style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            if (taskStatus == 'completed')
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '🎉 Task completed! You can now rate each other.',
-                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
                 ),
               ),
 
@@ -497,3 +655,4 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 }
+
